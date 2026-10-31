@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ant Hill 2.1 - Colony Under Siege (Harder Raids)</title>
+<style>
+  :root { --dirt:#82603f; --ink:#362b20; --paper:#f5ecd6; --leaf:#66793e; --border:#887250; --warn:#9f402c; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:16px Arial, sans-serif; background:#e8dfc8; color:var(--ink); line-height:1.4; }
+  header { background:#716043; color:#fff6e1; padding:18px 15px 14px; text-align:center; border-bottom:5px solid #503d28; }
+  h1 { font-size:35px; margin:0; letter-spacing:1px; }
+  header p { margin:3px 0; font-size:14px; }
+  nav { display:flex; justify-content:center; gap:6px; flex-wrap:wrap; padding:10px; background:#cbbb98; border-bottom:2px solid #9f8964; }
+  button, input { font:inherit; }
+  button { background:#ded0aa; color:#30271b; border:2px solid #88704f; border-radius:3px; padding:8px 12px; cursor:pointer; }
+  button:hover:not(:disabled) { background:#c5d49a; }
+  button:focus-visible, input:focus-visible { outline:3px solid #41735a; outline-offset:2px; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .active { background:#9eae79!important; font-weight:bold; }
+  main { max-width:1120px; padding:0 12px; margin:19px auto; }
+  section { background:var(--paper); border:2px solid var(--border); padding:19px; margin-bottom:15px; }
+  section[hidden] { display:none; }
+  h2 { margin:0 0 10px; font-size:24px; }
+  h3 { margin:16px 0 6px; font-size:18px; }
+  p { margin:9px 0; }
+  .small { font-size:13px; color:#665843; }
+  .alert { border:2px solid #ae7044; background:#f6dfb9; padding:12px; margin:12px 0; }
+  .alert.danger { background:#f1ccbd; border-color:#a74934; }
+  .alert.safe { background:#d6e4bb; border-color:#738b56; }
+  #statusEverywhere { font-weight:bold; font-size:13px; text-align:center; padding:7px 15px; background:#e2d4b5; }
+  .stats { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:7px; margin:14px 0; }
+  .stat { border:1px solid #b6a27c; background:#ebddbe; padding:9px; min-width:0; }
+  .stat b { display:block; font-size:21px; white-space:nowrap; }
+  .stat span { display:block; font-size:12px; color:#665843; }
+  .layout { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(300px,1fr); gap:16px; align-items:start; }
+  .panel { background:#f2e5c9; border:1px solid #b19a71; padding:12px; margin-bottom:12px; }
+  .buttonrow { display:flex; flex-wrap:wrap; gap:5px; margin:8px 0; }
+  .buttonrow button { margin:0; }
+  #surface { min-height:70px; border:3px solid #748653; border-bottom:5px solid #533e2c; background:#bbce92; padding:12px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  #surface .ants { letter-spacing:3px; font-size:17px; overflow:hidden; white-space:nowrap; }
+  .fieldcaption { font-size:12px; color:#4d5b30; }
+  #map { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); background:var(--dirt); border:5px solid #604327; padding:5px; gap:4px; }
+  .tile { min-height:70px; position:relative; padding:3px 1px; border:2px solid #674629; background:#8e6947; color:#37251b; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:1px; overflow:hidden; }
+  .tile.dirt { background:repeating-linear-gradient(145deg,#825d3c,#825d3c 9px,#8b6541 9px,#8b6541 18px); border-color:#725033; color:#c6a681; }
+  .tile.diggable { outline:2px dashed #e2d28c; outline-offset:-7px; }
+  .tile.tunnel { background:#c8ab78; border:2px dashed #6a4c32; }
+  .tile.room { background:#dfc392; border-radius:19px; border:3px solid #624a30; }
+  .tile.queen { background:#ebd6a7; border-radius:22px; border:3px solid #a07638; }
+  .tile:hover:not(:disabled) { filter:brightness(1.08); }
+  .tile .symbol { font-size:24px; line-height:1.2; }
+  .tile .roomlabel { font-size:10px; line-height:1.05; font-weight:bold; overflow-wrap:anywhere; }
+  .tile .depth { position:absolute; right:3px; top:0; font-size:9px; color:#dfc5a0; }
+  .mode { background:#c0d29c; }
+  .shoprow { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1px dashed #b19a71; }
+  .shoprow:last-child { border-bottom:0; }
+  .shoprow .text { flex:1; min-width:0; }
+  .shoprow .text strong { display:block; }
+  .shoprow .text small { color:#675a43; }
+  .shoprow button { min-width:103px; }
+  #threatTrack { height:15px; border:1px solid #624b32; background:#ddcfaf; margin:8px 0 5px; }
+  #threatFill { height:100%; width:0; background:#b76842; transition:width .2s; }
+  #news { min-height:100px; max-height:190px; overflow:auto; border:1px solid #b5a17b; background:#f9f2e3; padding:8px; font-size:13px; }
+  #news p { border-bottom:1px dotted #ddc9aa; padding-bottom:6px; margin:4px 0; }
+  .event { border:2px dashed #ab7048; padding:12px; background:#f7e4c1; margin-top:12px; }
+  .event h4 { margin:0 0 5px; }
+  #chatLog { max-height:300px; min-height:150px; overflow-y:auto; padding:12px; background:#fffaf0; border:1px solid #b6a27c; }
+  #chatLog p { margin:0 0 10px; }
+  #chatInput { padding:9px; width:min(70%,410px); border:1px solid #b6a27c; }
+  .badge { display:inline-block; background:#dce6bb; padding:3px 8px; border:1px solid #94a66d; font-size:12px; }
+  .instructions { max-width:680px; }
+  footer { text-align:center; padding:20px; color:#705b3e; font-size:12px; }
+  @media (pointer:fine) {
+    button, nav button { cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ccircle cx='10' cy='15' r='5' fill='%23372b20'/%3E%3Ccircle cx='20' cy='13' r='4' fill='%23372b20'/%3E%3Ccircle cx='27' cy='11' r='3' fill='%23372b20'/%3E%3Cpath d='M8 9L3 4M13 19L8 25M19 18L15 25M25 15L27 22M27 8L29 3' stroke='%23372b20' stroke-width='2'/%3E%3C/svg%3E") 10 15, pointer; }
+  }
+  @media(max-width:840px) { .layout { grid-template-columns:1fr; } .stats { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+  @media(max-width:440px) { section { padding:11px; } .stats { grid-template-columns:repeat(2,minmax(0,1fr)); } .tile { min-height:53px; } .tile .symbol { font-size:19px; } .tile .roomlabel { font-size:8px; } .shoprow button { min-width:94px; padding:7px 4px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>ANT HILL 2</h1>
+  <p>colony under siege // a little game about very small creatures</p>
+</header>
+<nav aria-label="Site sections">
+  <button type="button" data-page="home" class="navbutton">Home</button>
+  <button type="button" data-page="colony" class="navbutton active">My Colony</button>
+  <button type="button" data-page="messages" class="navbutton">Queen Chat</button>
+  <button type="button" data-page="guide" class="navbutton">Help + ant facts</button>
+</nav>
+<div id="statusEverywhere" role="status">The nest is quiet. For now.</div>
+<main>
+  <section id="home" hidden>
+    <h2>welcome to my ant hill</h2>
+    <p>There are a lot of ants living under this patch of grass. Unfortunately, the neighborhood is not very friendly.</p>
+    <p>Find food, dig tunnels, build rooms, hatch workers, and defend the queen from beetles, spiders, and rival ant colonies.</p>
+    <p>Every new room makes the colony better, but a bigger colony also attracts more attention. Don't forget to train soldiers.</p>
+    <p>🐜 🐜 🌱 🪨 🐜</p>
+    <button type="button" data-page="colony">Go check on the ants</button>
+    <p class="small">Handmade with HTML, CSS and JavaScript. The game pauses while you're on another tab of this website, and saves to this browser.</p>
+  </section>
+
+  <section id="colony">
+    <h2>My colony <span class="badge" id="waveBadge">Raid 0 survived</span></h2>
+    <p class="small">Keep the queen alive. The shop is on the right (or underneath the map on a phone). Click a shovel tool, then click dirt next to a tunnel to dig. Click an empty tunnel to build a room.</p>
+    <div class="stats" aria-live="polite">
+      <div class="stat"><b id="foodStat">60 / 100</b><span>Food in storage</span></div>
+      <div class="stat"><b id="workersStat">3 / 5</b><span>Worker ants</span></div>
+      <div class="stat"><b id="soldiersStat">0 / 1</b><span>Soldier ants</span></div>
+      <div class="stat"><b id="guardsStat">0</b><span>Workers guarding</span></div>
+      <div class="stat"><b id="healthStat">12 / 12</b><span>Queen's health</span></div>
+      <div class="stat"><b id="rateStat">+0.0</b><span>Food per second</span></div>
+    </div>
+    <div id="raidAlert" class="alert safe" role="status">No enemies nearby. You have time to prepare.</div>
+    <div class="layout">
+      <div>
+        <div class="panel">
+          <b>Outside the nest</b>
+          <div id="surface"><div><span>🌱 ☀️ 🍃</span><div class="fieldcaption">the world is a dangerous place for an ant</div></div><div id="surfaceAnts" class="ants">🐜🐜🐜</div></div>
+          <div class="buttonrow">
+            <button type="button" id="forageBtn">Forage +5 food</button>
+            <button type="button" id="scoutBtn">Search for scraps (risk)</button>
+          </div>
+          <p class="small">Foraging is free, but the smell of food attracts enemies. Searching for scraps is riskier but can pay off.</p>
+        </div>
+        <div class="panel">
+          <b>Under the ground</b>
+          <p class="small" id="toolHint">Selected: Dig tunnel. Click dirt beside an existing tunnel.</p>
+          <div class="buttonrow" id="buildTools" role="group" aria-label="Digging and room tools">
+            <button type="button" data-tool="dig" class="mode">Shovel</button>
+            <button type="button" data-tool="nursery">Nursery</button>
+            <button type="button" data-tool="granary">Granary</button>
+            <button type="button" data-tool="barracks">Barracks</button>
+            <button type="button" data-tool="farm">Fungus farm</button>
+            <button type="button" data-tool="post">Guard post</button>
+          </div>
+          <div id="map" aria-label="Clickable seven by five underground nest grid"></div>
+          <p class="small">Brown = undug soil. Tan = empty tunnel. Rounded rooms = buildings. Dig connected tunnels first, then place rooms in them. The crown is your queen.</p>
+        </div>
+        <div id="encounter" class="event" hidden aria-live="polite"></div>
+      </div>
+      <div>
+        <div class="panel">
+          <h3 style="margin-top:0">Ant shop</h3>
+          <div class="shoprow"><div class="text"><strong>Hatch worker</strong><small>Gathers food. Needs nursery space.</small></div><button type="button" id="buyWorker"></button></div>
+          <div class="shoprow"><div class="text"><strong>Train soldier</strong><small>Fights enemies, but eats food.</small></div><button type="button" id="buySoldier"></button></div>
+          <div class="shoprow"><div class="text"><strong>Improve foraging</strong><small>Get more from manual collecting.</small></div><button type="button" id="buyForage"></button></div>
+          <div class="shoprow"><div class="text"><strong>Help the queen</strong><small>Heal 4 queen health.</small></div><button type="button" id="buyHeal"></button></div>
+          <p class="small"><b>Room costs:</b> nursery 25, granary 28, barracks 35, fungus farm 40, guard post 30. Digging also costs food.</p>
+        </div>
+        <div class="panel">
+          <h3 style="margin-top:0">Defense plans</h3>
+          <p>Defense power: <b id="defenseStat">2</b></p>
+          <p>Threat: <b id="threatStat">0 / 26</b></p>
+          <div id="threatTrack"><div id="threatFill"></div></div>
+          <p class="small">More noise, foraging and construction means more danger. Raids scale with colony size and defenses, and even victories can cost ants. Attacks are announced before they arrive.</p>
+          <div class="buttonrow">
+            <button type="button" id="guardMinus">- guard</button>
+            <button type="button" id="guardPlus">+ guard</button>
+          </div>
+          <p class="small">Guards protect the nest but stop collecting food. They aren't soldiers.</p>
+          <button type="button" id="alarmBtn" disabled>Emergency barricade (12 food)</button>
+          <p class="small">During a raid warning, you can barricade once for +5 defense.</p>
+        </div>
+        <div class="panel">
+          <h3 style="margin-top:0">Colony notebook</h3>
+          <div id="news" aria-live="polite"><p>The ants have moved in. Let's hope they're okay.</p></div>
+          <div class="buttonrow">
+            <button type="button" id="saveBtn">Save game</button>
+            <button type="button" id="restartBtn">Start over</button>
+          </div>
+          <p class="small" id="saveNote">Autosaves every few seconds.</p>
+        </div>
+      </div>
+    </div>
+    <div id="winNotice" class="alert safe" hidden><b>You did it!</b> Your colony survived 3 raids, has at least 8 rooms, and trained 6 soldiers. You've built a proper little ant kingdom! You can keep playing.</div>
+  </section>
+
+  <section id="messages" hidden>
+    <h2>Queen Chat</h2>
+    <p>The queen knows what's happening in your colony. She also has very strong opinions about crumbs.</p>
+    <div id="chatLog"><p><b>Queen:</b> Finally, someone has come to check on us. Is there any food?</p></div>
+    <p><input id="chatInput" maxlength="240" placeholder="say something to the queen"><button type="button" id="sendBtn">Send</button></p>
+    <p class="small">Just a simple programmed chatbot, not an online multiplayer chat.</p>
+  </section>
+
+  <section id="guide" hidden>
+    <h2>How to play</h2>
+    <div class="instructions">
+      <p><b>1.</b> Forage for food. Workers also collect food while the game is running. Soldiers and workers consume a little food each second.</p>
+      <p><b>2.</b> Hatch workers for income. Dig a nursery when you hit your worker limit.</p>
+      <p><b>3.</b> To expand underground, select <b>Shovel</b>, dig a brown square next to an existing room or tunnel, then select a room and click an empty tunnel.</p>
+      <p><b>4.</b> Rooms do different jobs: nurseries fit more workers, granaries hold more food, barracks allow more soldiers, fungus farms generate food, and guard posts improve defense.</p>
+      <p><b>5.</b> Threat rises as the colony becomes more active. When a raid is announced, train soldiers, move workers to guard duty, or pay for an emergency barricade.</p>
+      <p><b>6.</b> An attack can steal food, kill ants, and hurt the queen. If her health reaches zero, you lose. Heal her in the shop before that happens.</p>
+      <p><b>Goal:</b> survive 3 raids, build 8 rooms (including the queen chamber), and train 6 soldiers.</p>
+      <hr>
+      <h3>Ant facts</h3>
+      <p>Most worker ants are female. Ant colonies can have specialized jobs such as foraging, brood care, and colony defense. Ants use chemical signals called pheromones to communicate.</p>
+      <p>Real ant species vary widely. This is a made-up strategy game, not an accurate biology simulator.</p>
+    </div>
+  </section>
+</main>
+<footer>ANT HILL 2 • made for the ants • 2026 • no ants were harmed while writing this code</footer>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const ROWS = 5, COLS = 7;
+const SAVE_KEY = 'antHillUnderSiege_v2'; // Separate from the older Ant Hill save.
+const TYPES = {
+  nursery: {label:'Nursery', symbol:'🥚', cost:25, hint:'+5 worker spaces'},
+  granary: {label:'Granary', symbol:'🌾', cost:28, hint:'+80 food storage'},
+  barracks: {label:'Barracks', symbol:'🛡️', cost:35, hint:'+4 soldier spaces, +2 defense'},
+  farm: {label:'Fungus farm', symbol:'🍄', cost:40, hint:'+1.6 food each second'},
+  post: {label:'Guard post', symbol:'🪵', cost:30, hint:'+5 defense'}
+};
+function freshState() {
+  return {
+    food:60, workers:3, soldiers:0, guards:0, health:12, forageLevel:0,
+    threat:2, phase:'quiet', countdown:0, enemyName:'', enemyPower:0,
+    barricade:0, waves:0, time:0, hunger:0, eventIn:47, event:null, victory:false,
+    rooms:{'3,0':'queen', '3,1':'tunnel', '2,1':'tunnel', '4,1':'tunnel'}
+  };
+}
+let state=freshState();
+let tool='dig';
+let page='colony';
+let noticeCount=0;
+let ticks=0;
+const number = value => Math.floor(value).toLocaleString();
+const count = type => Object.values(state.rooms).filter(v=>v===type).length;
+const roomTotal = () => Object.values(state.rooms).filter(v=>v!=='tunnel').length;
+const capacity = () => 5 + 5*count('nursery');
+const soldierCapacity = () => 1 + 4*count('barracks');
+const storage = () => 100 + 80*count('granary');
+const workerCost = () => Math.floor(10 + 3*state.workers + state.workers*state.workers*0.35);
+const soldierCost = () => 19 + state.soldiers*7;
+const forageCost = () => 25 + state.forageLevel*25;
+const healCost = () => 25 + state.waves*3;
+const digCost = () => 8 + 2*Math.floor(Object.keys(state.rooms).length/7);
+const forageGain = () => 5 + 3*state.forageLevel;
+const foodRate = () => (state.workers-state.guards)*0.75 + count('farm')*1.6 - (state.workers+state.soldiers)*0.12;
+const defensePower = () => 2 + state.soldiers*5 + state.guards*2 + count('barracks')*2 + count('post')*5 + state.barricade;
+const threatLimit = () => 26;
+const clampFood = () => { state.food=Math.max(0,Math.min(storage(),state.food)); };
+const rand = max => Math.floor(Math.random()*max);
+function log(text) {
+  const p=document.createElement('p');
+  p.textContent=text;
+  $('news').prepend(p);
+  while($('news').children.length>10) $('news').lastElementChild.remove();
+}
+function save(silent=true) {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    if(!silent) $('saveNote').textContent='Saved successfully in this browser.';
+    return true;
+  } catch(err) {
+    $('saveNote').textContent='Browser storage is unavailable. Keep this tab open or allow local storage.';
+    return false;
+  }
+}
+function load() {
+  try {
+    const item=localStorage.getItem(SAVE_KEY);
+    if(!item) return;
+    const s=JSON.parse(item);
+    if(!s || typeof s!=='object' || !s.rooms || s.rooms['3,0']!=='queen') return;
+    const template=freshState();
+    for(const k of Object.keys(template)) {
+      if(k==='rooms') continue;
+      const v=s[k];
+      if(typeof template[k]==='number' && typeof v==='number' && Number.isFinite(v) && v>=0) template[k]=v;
+      if(typeof template[k]==='string' && typeof v==='string') template[k]=v;
+      if(typeof template[k]==='boolean' && typeof v==='boolean') template[k]=v;
+      if(k==='event' && (v===null || ['crumbs','corpse','rain'].includes(v))) template[k]=v;
+    }
+    template.rooms={};
+    for(const [key,value] of Object.entries(s.rooms)) {
+      const parts=key.split(',').map(Number);
+      if(parts.length===2 && parts[0]>=0 && parts[0]<COLS && parts[1]>=0 && parts[1]<ROWS && (value==='queen'||value==='tunnel'||TYPES[value])) template.rooms[key]=value;
+    }
+    template.rooms['3,0']='queen';
+    template.workers=Math.max(1,Math.min(1000,Math.floor(template.workers)));
+    template.soldiers=Math.min(1000,Math.floor(template.soldiers));
+    template.guards=Math.min(template.workers,Math.floor(template.guards));
+    template.health=Math.min(12,template.health);
+    template.waves=Math.floor(template.waves);
+    if(template.phase!=='warning') {template.phase='quiet';template.countdown=0;template.barricade=0;}
+    state=template;
+    clampFood();
+    log('Welcome back. Your ants remember you.');
+  }catch(err) { log('Browser storage is unavailable here. You can still play, but progress may not save.'); $('saveNote').textContent='Saving is blocked in this preview. Hosting on a normal website may allow it.'; }
+}
+function showPage(name) {
+  page=name;
+  document.querySelectorAll('main > section').forEach(el=>el.hidden=el.id!==name);
+  document.querySelectorAll('.navbutton').forEach(el=>el.classList.toggle('active',el.dataset.page===name));
+  render();
+}
+document.querySelectorAll('[data-page]').forEach(btn=>btn.addEventListener('click',()=>showPage(btn.dataset.page)));
+function adjacent(x,y) {
+  return [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>Object.hasOwn(state.rooms,(x+dx)+','+(y+dy)));
+}
+function buildAt(x,y) {
+  if(state.health<=0) return;
+  const key=x+','+y;
+  const current=state.rooms[key];
+  if(tool==='dig') {
+    if(current) {log('That square is already dug out. Pick a room to build there.');return;}
+    if(!adjacent(x,y)) {log('Dig from an existing tunnel or chamber, not an isolated patch.');return;}
+    const price=digCost();
+    if(state.food<price) {log('Not enough food to dig. Need '+price+'.');return;}
+    state.food-=price;
+    state.rooms[key]='tunnel';
+    state.threat+=1.5;
+    log('A new tunnel is ready. (-'+price+' food)');
+  } else {
+    if(current!=='tunnel') {log('Select an EMPTY tunnel for that room.');return;}
+    const type=TYPES[tool];
+    if(state.food<type.cost) {log('Not enough food. '+type.label+' needs '+type.cost+'.');return;}
+    state.food-=type.cost;
+    state.rooms[key]=tool;
+    state.threat+=3;
+    log('Built a '+type.label.toLowerCase()+'! '+type.hint+'.');
+  }
+  save();render();
+}
+function renderMap() {
+  const map=$('map');
+  map.replaceChildren();
+  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++) {
+    const key=x+','+y;
+    const kind=state.rooms[key] || 'dirt';
+    const tile=document.createElement('button');
+    tile.type='button';
+    tile.className='tile '+(kind==='dirt'?'dirt':kind==='tunnel'?'tunnel':'room '+(kind==='queen'?'queen':''));
+    if(kind==='dirt' && adjacent(x,y)) tile.classList.add('diggable');
+    const symbol=document.createElement('span');symbol.className='symbol';
+    symbol.textContent=kind==='dirt'?'·':kind==='tunnel'?'↔':kind==='queen'?'👑':TYPES[kind].symbol;
+    const label=document.createElement('span');label.className='roomlabel';
+    label.textContent=kind==='dirt'?'soil':kind==='tunnel'?'tunnel':kind==='queen'?'the queen':TYPES[kind].label;
+    tile.title=label.textContent+' ('+(x+1)+','+(y+1)+')';
+    tile.setAttribute('aria-label',label.textContent+', column '+(x+1)+', row '+(y+1));
+    tile.append(symbol,label);
+    tile.addEventListener('click',()=>buildAt(x,y));
+    map.append(tile);
+  }
+}
+function renderEvent() {
+  const box=$('encounter');
+  box.replaceChildren();
+  if(!state.event||state.health<=0) {box.hidden=true;return;}
+  box.hidden=false;
+  const h=document.createElement('h4');
+  h.textContent='Something happened outside!';
+  const p=document.createElement('p');
+  const first=document.createElement('button');
+  const second=document.createElement('button');
+  if(state.event==='crumbs') {p.textContent='The scouts found a forgotten picnic crumb. Maybe something is guarding it.';first.textContent='Take the big crumb (+32 food, +10 threat)';second.textContent='Take the little bits (+10 food)';}
+  if(state.event==='corpse') {p.textContent='There is a dead beetle on the surface. Free food, or a trap?';first.textContent='Bring it home (+45 food, +16 threat)';second.textContent='Leave it alone (-5 threat)';}
+  if(state.event==='rain') {p.textContent='Heavy rain is flooding the entrance. The ants look nervous.';first.textContent='Repair tunnels (-14 food, -6 threat)';second.textContent='Wait it out (+9 threat)';}
+  first.addEventListener('click',()=>chooseEvent(0));
+  second.addEventListener('click',()=>chooseEvent(1));
+  box.append(h,p,first,second);
+  first.disabled=state.event==='rain'&&state.food<14;
+}
+function chooseEvent(choice) {
+  const kind=state.event;
+  if(!kind)return;
+  if(kind==='crumbs') {state.food+=choice===0?32:10;state.threat+=choice===0?10:0;log(choice===0?'We stole the giant crumb. Something noticed.':'The ants carried home a few safe crumbs.');}
+  if(kind==='corpse') {if(choice===0) {state.food+=45;state.threat+=16;log('The beetle was delicious. And very, very smelly.');} else {state.threat=Math.max(0,state.threat-5);log('The scouts quietly left the beetle.');}}
+  if(kind==='rain') {if(choice===0) {if(state.food<14) return;state.food-=14;state.threat=Math.max(0,state.threat-6);log('The colony patched the flooded entrance.');} else {state.threat+=9;log('The rain drove the ants into a panic.');}}
+  state.event=null;clampFood();save();render();
+}
+function render() {
+  clampFood();
+  $('foodStat').textContent=number(state.food)+' / '+storage();
+  $('workersStat').textContent=state.workers+' / '+capacity();
+  $('soldiersStat').textContent=state.soldiers+' / '+soldierCapacity();
+  $('guardsStat').textContent=state.guards;
+  $('healthStat').textContent=Math.ceil(state.health)+' / 12';
+  $('rateStat').textContent=(foodRate()>=0?'+':'')+foodRate().toFixed(1);
+  $('waveBadge').textContent='Raids survived: '+state.waves;
+  $('defenseStat').textContent=defensePower();
+  $('threatStat').textContent=Math.floor(state.threat)+' / '+threatLimit();
+  $('threatFill').style.width=Math.min(100,state.threat/threatLimit()*100)+'%';
+  $('forageBtn').textContent='Forage +'+forageGain()+' food';
+  $('buyWorker').textContent=workerCost()+' food';
+  $('buySoldier').textContent=soldierCost()+' food';
+  $('buyForage').textContent=forageCost()+' food';
+  $('buyHeal').textContent=healCost()+' food';
+  $('buyWorker').disabled=state.food<workerCost()||state.workers>=capacity()||state.health<=0;
+  $('buySoldier').disabled=state.food<soldierCost()||state.soldiers>=soldierCapacity()||state.health<=0;
+  $('buyForage').disabled=state.food<forageCost()||state.health<=0;
+  $('buyHeal').disabled=state.food<healCost()||state.health>=12||state.health<=0;
+  $('guardMinus').disabled=state.guards===0||state.health<=0;
+  $('guardPlus').disabled=state.guards>=state.workers||state.health<=0;
+  $('alarmBtn').disabled=state.phase!=='warning'||state.barricade>0||state.food<12||state.health<=0;
+  $('forageBtn').disabled=state.health<=0;
+  $('scoutBtn').disabled=state.health<=0;
+  document.querySelectorAll('[data-tool]').forEach(el=>el.classList.toggle('mode',el.dataset.tool===tool));
+  const desc=tool==='dig'?'Dig tunnel ('+digCost()+' food). Click outlined dirt touching the nest.':TYPES[tool].label+' ('+TYPES[tool].cost+' food). '+TYPES[tool].hint+'. Click a tunnel.';
+  $('toolHint').textContent='Selected: '+desc;
+  let status,css;
+  if(state.health<=0) {status='The queen has fallen. The colony is lost. Restart to try again.';css='alert danger';}
+  else if(state.phase==='warning') {status='INCOMING: '+state.enemyName+' (power '+state.enemyPower+') in '+state.countdown+'s. Defense: '+defensePower()+'.';css='alert danger';}
+  else if(state.threat>17) {status='Something is moving in the grass. You might want more soldiers.';css='alert';}
+  else {status='The nest is quiet. For now.';css='alert safe';}
+  $('raidAlert').textContent=status;
+  $('raidAlert').className=css;
+  $('statusEverywhere').textContent=status;
+  $('surfaceAnts').textContent='🐜'.repeat(Math.min(9,state.workers));
+  if(state.health>0 && state.waves>=3 && roomTotal()>=8 && state.soldiers>=6) {
+    if(!state.victory) {state.victory=true;log('The ants have built a proper kingdom! You reached the main goal.');}
+  }
+  $('winNotice').hidden=!state.victory;
+  renderMap();renderEvent();
+}
+function buy(kind) {
+  if(state.health<=0)return;
+  let price;
+  if(kind==='worker') {price=workerCost();if(state.workers>=capacity()) {log('You need another nursery.');return;}}
+  if(kind==='soldier') {price=soldierCost();if(state.soldiers>=soldierCapacity()) {log('You need barracks for more soldiers.');return;}}
+  if(kind==='forage')price=forageCost();
+  if(kind==='heal') {price=healCost();if(state.health>=12)return;}
+  if(state.food<price) {log('Not enough food. You need '+price+'.');return;}
+  state.food-=price;
+  if(kind==='worker') {state.workers++;log('A new worker has hatched.');}
+  if(kind==='soldier') {state.soldiers++;log('A soldier joined the colony.');}
+  if(kind==='forage') {state.forageLevel++;log('The scouts learned a better way to carry food.');}
+  if(kind==='heal') {state.health=Math.min(12,state.health+4);log('The queen recovered some strength.');}
+  save();render();
+}
+$('buyWorker').addEventListener('click',()=>buy('worker'));
+$('buySoldier').addEventListener('click',()=>buy('soldier'));
+$('buyForage').addEventListener('click',()=>buy('forage'));
+$('buyHeal').addEventListener('click',()=>buy('heal'));
+$('forageBtn').addEventListener('click',()=>{
+  if(state.health<=0)return;
+  state.food+=forageGain();state.threat+=1.1;
+  clampFood();render();save();
+});
+$('scoutBtn').addEventListener('click',()=>{
+  if(state.health<=0)return;
+  const haul=10+rand(23);
+  state.food+=haul;
+  state.threat+=5+rand(5);
+  clampFood();log('The ants found '+haul+' food on a risky trip. The grass rustled behind them.');render();save();
+});
+$('guardMinus').addEventListener('click',()=>{state.guards=Math.max(0,state.guards-1);render();save();});
+$('guardPlus').addEventListener('click',()=>{state.guards=Math.min(state.workers,state.guards+1);render();save();});
+$('alarmBtn').addEventListener('click',()=>{
+  if(state.phase==='warning'&&!state.barricade&&state.food>=12) {
+    state.food-=12;state.barricade=5;log('The ants barricaded the main tunnel. +5 defense for this raid.');render();save();
+  }
+});
+document.querySelectorAll('[data-tool]').forEach(el=>el.addEventListener('click',()=>{tool=el.dataset.tool;render();}));
+$('saveBtn').addEventListener('click',()=>save(false));
+$('restartBtn').addEventListener('click',()=>{
+  if(!confirm('Erase your Ant Hill 2 colony and begin again? Your old Ant Hill 1 save will not be affected.'))return;
+  state=freshState();tool='dig';$('news').replaceChildren();log('A fresh colony! Good luck, little ants.');save();render();
+});
+function warnRaid() {
+  const names=state.waves===0?['hungry beetle','hungry beetle','small spider']:['hungry beetle','hunting spider','rival ant scouts','rival ant raiders'];
+  state.phase='warning';state.countdown=22;state.barricade=0;
+  state.enemyName=names[rand(names.length)];
+  // Larger colonies attract larger enemies. Raids also partially adapt to
+  // strong defenses so a huge army cannot make the nest permanently invincible.
+  const growthPower = 7 + state.waves*4 + Math.floor(roomTotal()*1.5)
+    + Math.floor(state.workers*1.4) + Math.floor(state.soldiers*2.2) + rand(12);
+  const siegePower = Math.floor(defensePower() *
+    Math.min(1.33, 0.78 + state.waves*0.055)) + rand(11);
+  const bossBonus = (state.waves+1)%4===0 ? 12 + Math.floor(state.waves*1.5) : 0;
+  if(bossBonus) state.enemyName='huge swarm of rival ants';
+  state.enemyPower = Math.max(growthPower, siegePower) + bossBonus;
+  log('ALARM! '+state.enemyName+' approaching. Power '+state.enemyPower+'. Prepare defenses!');
+}
+function resolveRaid() {
+  const power=state.enemyPower;
+  const defense=defensePower();
+  state.waves++;
+  if(defense>=power) {
+    // Defending costs supplies; attacks are dangerous even if repelled.
+    const supplyCost=Math.min(Math.floor(state.food), 3+Math.ceil(power/10)+rand(5));
+    state.food-=supplyCost;
+    const dangerRatio = power/Math.max(1,defense);
+    let casualties=0;
+    if(state.soldiers>0 && (Math.random()<0.32+0.4*dangerRatio)) {
+      casualties=Math.min(state.soldiers,1+(dangerRatio>0.8 && Math.random()<0.4 ? 1 : 0));
+      state.soldiers-=casualties;
+    }
+    // Tiny garrisons can hold the line but may lose a worker.
+    let workerCasualties=0;
+    if(state.soldiers===0 && state.workers>1 && Math.random()<0.35) {
+      workerCasualties=1;state.workers--;state.guards=Math.min(state.guards,state.workers);
+    }
+    const loot=3+rand(7);
+    state.food+=loot;
+    log('Raid repelled! Lost '+casualties+' soldiers, '+workerCasualties+
+      ' workers and '+supplyCost+' food in the fight. Recovered '+loot+' food afterward.');
+  } else {
+    const diff=power-defense;
+    const stolen=Math.min(Math.floor(state.food),12+rand(12)+state.waves*2);
+    const lostWorkers=Math.min(Math.max(0,state.workers-1),Math.ceil(diff/6));
+    const lostSoldiers=Math.min(state.soldiers,Math.floor(diff/9));
+    const harm=2+Math.ceil(diff/3);
+    state.food-=stolen;
+    state.workers-=lostWorkers;
+    state.soldiers-=lostSoldiers;
+    state.guards=Math.min(state.guards,state.workers);
+    state.health=Math.max(0,state.health-harm);
+    log('The '+state.enemyName+' broke in! Lost '+stolen+' food, '+lostWorkers+' workers, '+lostSoldiers+' soldiers. Queen took '+harm+' damage.');
+  }
+  state.phase='quiet';state.countdown=0;state.barricade=0;
+  state.threat=rand(5);
+  state.enemyName='';state.enemyPower=0;
+  clampFood();
+  if(state.health<=0) {log('The queen died. The colony cannot continue. Press Start over to try again.');}
+  save();
+}
+function tick() {
+  // No background punishment: only play time spent on the colony page counts.
+  if(page!=='colony'||document.hidden||state.health<=0)return;
+  ticks++;state.time++;
+  const rate=foodRate();
+  state.food+=rate;
+  clampFood();
+  if(state.food<=0&&rate<0) {
+    state.hunger++;
+    if(state.hunger>=16) {
+      state.hunger=0;
+      if(state.soldiers>0) {state.soldiers--;log('A soldier left the starving colony.');}
+      else if(state.workers>1) {state.workers--;state.guards=Math.min(state.guards,state.workers);log('A worker died because the colony ran out of food.');}
+    }
+  } else state.hunger=0;
+  if(state.phase==='quiet') {
+    state.threat+=0.19+state.workers*0.042+roomTotal()*0.035;
+    if(state.threat>=threatLimit())warnRaid();
+  } else {
+    state.countdown--;
+    if(state.countdown<=0)resolveRaid();
+  }
+  state.eventIn--;
+  if(state.eventIn<=0) {
+    state.eventIn=52+rand(35);
+    if(state.event===null) {
+      const events=['crumbs','corpse','rain'];
+      state.event=events[rand(events.length)];
+      log('The scouts have news from the surface. Check the event under the nest map.');
+    }
+  }
+  render();
+  if(ticks%5===0)save();
+}
+// Queen chatbot. No server or real messaging is used.
+function chat(who,text) {
+  const p=document.createElement('p');
+  const b=document.createElement('b');b.textContent=who+': ';
+  p.append(b,document.createTextNode(text));
+  $('chatLog').append(p);$('chatLog').scrollTop=$('chatLog').scrollHeight;
+}
+function sendMessage() {
+  const el=$('chatInput');
+  const message=el.value.trim();if(!message)return;
+  chat('You',message);el.value='';
+  const m=message.toLowerCase();let reply;
+  if(m.includes('hello')||m==='hi'||m.startsWith('hi ')) reply='Hello. We have '+state.workers+' workers and '+state.soldiers+' soldiers. How are we doing?';
+  else if(m.includes('food')||m.includes('hungry')) reply='Our stores have '+number(state.food)+' food. Do not let us starve. I am literally laying eggs here.';
+  else if(m.includes('raid')||m.includes('enemy')||m.includes('spider')) reply=state.phase==='warning'?'We are under attack soon! Get the guards ready!':'We have survived '+state.waves+' raids. The smell of food attracts trouble.';
+  else if(m.includes('soldier')||m.includes('guard')) reply='We have '+state.soldiers+' soldiers and '+state.guards+' workers on guard duty. Please keep the tunnels safe.';
+  else if(m.includes('health')||m.includes('hurt')||m.includes('queen')) reply='I have '+Math.ceil(state.health)+' out of 12 health. I would prefer to stay alive, thank you.';
+  else if(m.includes('room')||m.includes('build')||m.includes('tunnel')) reply='We have '+roomTotal()+' rooms. Dig a tunnel first, then choose what room to put there.';
+  else if(m.includes('bye')) reply='Goodbye! If you see a bird, please do not mention our location.';
+  else reply=['This is very important, but I am also very busy.','Have you checked on the nursery?','The colony would appreciate another crumb.','Please do not bring any spiders home.'][rand(4)];
+  setTimeout(()=>chat('Queen',reply),350);
+}
+$('sendBtn').addEventListener('click',sendMessage);
+$('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage();});
+window.addEventListener('beforeunload',()=>save());
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save();});
+load();render();setInterval(tick,1000);
+</script>
+</body>
+</html>
